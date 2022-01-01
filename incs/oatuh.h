@@ -1,3 +1,10 @@
+/*
+ * Copyright 2022 Yeoun 
+ *
+ *   Author: Yeoun 
+ *   This code is under the Apache License.
+ */
+
 #ifndef OATUH_H
 # define OATUH_H
 
