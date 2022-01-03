@@ -77,14 +77,43 @@ static void parser_header(REQUEST *req)
         {"Connection", "keep-alive"},
         {NULL, NULL},
     };
+    MAP_CHILD *temp;
+    MAP_CHILD *pretemp;
+    int idx;
 
-    for (int i = 0; preheader[i].key; i++)
-        oatuh_set_header(&(req->header), preheader[i].key, preheader[i].value);
+    temp = req->header;
+    req->header = (MAP_CHILD *) calloc (req->header ?
+        oatuh_get_header_size(req->header) + oatuh_get_header_size(preheader) + 1 :
+        oatuh_get_header_size(preheader) + 1, sizeof(MAP_CHILD)); 
+    for (idx = 0; preheader[idx].key; idx++)
+    {
+        req->header[idx].key = strdup(preheader[idx].key);
+        req->header[idx].value = strdup(preheader[idx].value);
+    }
+
+    if (!temp)
+        return ;
+    for (int i = 0; temp[i].key; i++)
+    {
+        if (get_header(req->header, temp[i].key)->key)
+            continue;
+        req->header[idx].key = temp[i].key;
+        req->header[idx++].value = temp[i].value;
+    }
+    free(temp);
 }
 
-static void parser_body(REQUEST *req)
+static void parser_body_header(REQUEST *req)
 {
-    printf("body parser\n");
+    BODY_TYPE type;
+    char buffer[100];
+
+    type = *(int *) req->body;
+    if (type == RAW)
+    {
+        sprintf(buffer, "%d", ((BODY_RAW *) req->body)->length);
+        oatuh_set_header(&req->header, "Content-Length", buffer);
+    }
 }
 
 int oatuh_parser(REQUEST *req)
@@ -99,7 +128,38 @@ int oatuh_parser(REQUEST *req)
     if (error_code != NO_ERROR)
         return error_code;
     parser_header(req);
-    if (req->type->request_body)
-        parser_body(req);
+	if (req->type->request_body && req->body)
+        parser_body_header(req);
     return NO_ERROR;
+}
+
+/* header */
+
+MAP_CHILD *get_header(MAP_CHILD *header, char *key)
+{
+	int i;
+
+	for (i = 0; header[i].key; i++)
+	{
+		if (!strcasecmp(header[i].key, key))
+			return header + i;
+	}
+	return header + i;
+}
+
+/* body parser */
+
+void *oatuh_raw_body(char *raw)
+{
+    BODY_RAW *body;
+    
+    body = (BODY_RAW *) calloc(1, sizeof(BODY_RAW));
+    if (!body)
+        return NULL;
+    body->type = RAW;
+    body->body = strdup(raw);
+    if (!body->body)
+        return NULL;
+    body->length = strlen(raw);
+    return (void *)body;
 }

@@ -37,11 +37,19 @@ enum scheme
 };
 
 /*
- * Body type
+ * body
  */
+typedef enum body_type BODY_TYPE;
+enum body_type
+{
+	RAW,
+	FORMDATA	
+};
+
 typedef struct body_raw BODY_RAW;
 struct body_raw
 {
+	BODY_TYPE type;
 	char *body;
 	int length;
 };

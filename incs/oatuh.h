@@ -50,6 +50,8 @@ int		oatuh_get_header_size(MAP_CHILD *header);
 char	*oatuh_get_header(MAP_CHILD *header, char *key);
 void	oatuh_set_header(MAP_CHILD **header, char *key, char *value);
 
+void	*oatuh_raw_body(char *raw);
+
 int     oatuh(REQUEST *req);
 
 #endif

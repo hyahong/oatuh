@@ -93,10 +93,11 @@ static int connect_ssl(REQUEST *req)
 	return NO_ERROR;
 }
 
-static int write_request(REQUEST *req)
+static void write_header(REQUEST *req)
 {
 	char *header;
 	int length;
+	int written;
 
 	length = 0;
 	length += strlen(req->type->name) + strlen(req->path) + 11;
@@ -116,22 +117,44 @@ static int write_request(REQUEST *req)
 		strcat(header, "\n");
 	}
 	strcat(header, "\n");
-	if (req->scheme == HTTPS)
-		SSL_write(req->connection.tls.ssl, header, length);
-	else
-		write(req->connection.socket, header, length);
+
+	written = 0;
+	while (written < length)
+	{
+		if (req->scheme == HTTPS)
+			written += SSL_write(req->connection.tls.ssl, header, length);
+		else
+			written += write(req->connection.socket, header, length);
+	}
 }
 
-static MAP_CHILD *get_header(MAP_CHILD *header, char *key)
+static void write_body_raw(REQUEST *req)
 {
-	int i;
-
-	for (i = 0; header[i].key; i++)
+	BODY_RAW *body;
+	int written;
+	
+	body = (BODY_RAW *) req->body;
+	written = 0;
+	while (written < body->length)
 	{
-		if (!strcasecmp(header[i].key, key))
-			return header + i;
+		if (req->scheme == HTTPS)
+			written += SSL_write(req->connection.tls.ssl, body->body, body->length - written);
+		else
+			written += write(req->connection.socket, body->body, body->length - written);
 	}
-	return header + i;
+}
+
+static int write_request(REQUEST *req)
+{
+	BODY_TYPE type;
+
+	write_header(req);
+	if (req->type->request_body && req->body)
+	{
+		type = *(int *) req->body;
+		if (type == RAW)
+			write_body_raw(req);
+	}
 }
 
 static void read_header(REQUEST *req)
@@ -158,7 +181,6 @@ static void read_header(REQUEST *req)
 			break;
 	}
 	while (1);
-	printf("(%s)\n", header);
 	pos = strstr(header, "\r\n\r\n");
 	req->response->buffer = memndup(pos + 4, length - (int)(pos - header + 4));
 	req->response->buffer_length = length - (int)(pos - header + 4);
@@ -240,6 +262,7 @@ start:
 		}
 		block[block_pos++] = req->response->buffer;
 		req->response->buffer = strdup("");
+		req->response->buffer_length = 0;
 
 		goto start;
 	}
@@ -321,6 +344,7 @@ void	oatuh_destroy(REQUEST *req)
 	free(req);
 }
 
+
 int		oatuh_get_header_size(MAP_CHILD *header)
 {
 	int size;
@@ -369,7 +393,7 @@ void	oatuh_set_header(MAP_CHILD **header, char *key, char *value)
 /*
  * oatuh () - request REST API
  *
- * REQUEST *req: request target data 
+ * REQUEST *req: request data pointer
  */
 int		oatuh(REQUEST *req)
 {
@@ -395,6 +419,12 @@ int		oatuh(REQUEST *req)
 	error_code = read_response(req);
 	if (error_code != NO_ERROR)
 		return error_code;
-
+	
+    close(req->connection.socket);
+	if (req->scheme == HTTPS)
+	{
+		SSL_free(req->connection.tls.ssl);
+		SSL_CTX_free(req->connection.tls.ctx);
+	}
 	return NO_ERROR;
 }
