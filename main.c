@@ -11,7 +11,7 @@ int main(void)
 
         oatuh_set_header(&req->header, "Content-Type", "application/json; charset=UTF-8");
 
-        req->body = oatuh_raw_body("{\"title\": \"foo\", \"request\": \"is it good?\"}");
+        req->body = oatuh_create_raw_body("{\"title\": \"foo\", \"request\": \"is it good?\"}");
 
         oatuh(req);
 

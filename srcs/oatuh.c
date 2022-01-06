@@ -1,5 +1,9 @@
 #include <oatuh.h>
 
+/*
+ * util
+ *  utility function
+ */
 static char *memnstr(char *src, int n, char *str, int s)
 {
 	for (int i = 0; i < n - s; i++)
@@ -41,6 +45,162 @@ static int htoi(char *hex)
 	return decimal;
 }
 
+/*
+ * parser
+ *  parse uri, header, body
+ */
+
+/* header */
+static MAP_CHILD *get_header(MAP_CHILD *header, char *key)
+{
+	int i;
+
+	for (i = 0; header[i].key; i++)
+	{
+		if (!strcasecmp(header[i].key, key))
+			return header + i;
+	}
+	return header + i;
+}
+
+/* parser */
+static int parser_method(REQUEST *req)
+{
+    char method[10] = { 0, };
+
+    req->type = NULL;
+    strcpy(method, req->method);
+    for (int i = 0; i <= METHOD_NUMBER; i++)
+    {
+        if (!strcasecmp(method, method_type[i].name))
+        {
+            req->type = &method_type[i];
+            return NO_ERROR;
+        }
+    }
+    return INVALID_METHOD;
+}
+
+static void parser_uri(REQUEST *req)
+{
+    int idx;
+    char *cursor;
+
+    cursor = req->uri;
+    // scheme
+    req->scheme = HTTP;
+    if (strlen(cursor) > 7 && !strncmp(cursor, "http://", 7))
+        cursor += 7;
+    else if (strlen(cursor) > 8 && !strncmp(cursor, "https://", 8))
+    {
+        req->scheme = HTTPS;
+        cursor += 8;
+    }
+    // authority
+    idx = 0;
+    while (cursor[idx] && cursor[idx] != '/')
+        idx++;
+    req->authority = strndup(cursor, idx);
+    cursor += idx;
+    // path
+    req->path = strdup(strlen(cursor) > 0 ? cursor : "/");
+
+    // port
+    idx = 0;
+    cursor = req->authority;
+    while (cursor[idx] && cursor[idx] != ':')
+        idx++;
+    req->host = strndup(cursor, idx);
+    if (!cursor[idx])
+        req->port = strdup(req->scheme == HTTPS ? "443" : "80");
+    else
+        req->port = strdup(cursor + idx + 1);
+}
+
+static int parser_dns(REQUEST *req)
+{
+    struct hostent *host = NULL;
+    struct in_addr addr;
+ 
+    memset(&addr, 0x00, sizeof(addr));
+    host = gethostbyname(req->host);
+    if (!host)
+        return INVALID_HOST;
+    addr.s_addr = *(u_long *)host->h_addr_list[0];
+    req->ip = strdup(inet_ntoa(addr));
+    return NO_ERROR;
+}
+
+static void parser_header(REQUEST *req)
+{
+    MAP_CHILD preheader[7] = {
+        {"Host", req->host},
+        {"User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"},
+        {"Accept", "*/*"},
+        {"Accept-Encoding", "identity"},
+        {"Connection", "keep-alive"},
+        {NULL, NULL},
+    };
+    MAP_CHILD *temp;
+    MAP_CHILD *pretemp;
+    int idx;
+
+    temp = req->header;
+    req->header = (MAP_CHILD *) calloc (req->header ?
+        oatuh_get_header_size(req->header) + oatuh_get_header_size(preheader) + 1 :
+        oatuh_get_header_size(preheader) + 1, sizeof(MAP_CHILD)); 
+    for (idx = 0; preheader[idx].key; idx++)
+    {
+        req->header[idx].key = strdup(preheader[idx].key);
+        req->header[idx].value = strdup(preheader[idx].value);
+    }
+
+    if (!temp)
+        return ;
+    for (int i = 0; temp[i].key; i++)
+    {
+        if (get_header(req->header, temp[i].key)->key)
+            continue;
+        req->header[idx].key = temp[i].key;
+        req->header[idx++].value = temp[i].value;
+    }
+    free(temp);
+}
+
+static void parser_body_header(REQUEST *req)
+{
+    BODY_TYPE type;
+    char buffer[100];
+
+    type = *(int *) req->body;
+    if (type == RAW)
+    {
+        sprintf(buffer, "%d", ((BODY_RAW *) req->body)->length);
+        oatuh_set_header(&req->header, "Content-Length", buffer);
+    }
+}
+
+static int oatuh_parser(REQUEST *req)
+{
+    int error_code;
+
+    error_code = parser_method(req);
+    if (error_code != NO_ERROR)
+        return error_code;
+    parser_uri(req);
+    error_code = parser_dns(req);
+    if (error_code != NO_ERROR)
+        return error_code;
+    parser_header(req);
+	if (req->type->request_body && req->body)
+        parser_body_header(req);
+    return NO_ERROR;
+}
+
+/*
+ * socket
+ *  the part that uses socket directly
+ */
 static int connect_socket(REQUEST *req)
 {
     struct hostent *host;
@@ -126,6 +286,7 @@ static void write_header(REQUEST *req)
 		else
 			written += write(req->connection.socket, header, length);
 	}
+	free(header);
 }
 
 static void write_body_raw(REQUEST *req)
@@ -203,11 +364,13 @@ static void read_header(REQUEST *req)
 		req->response->header[i].key = strndup(pos + 2, cursor - pos - 2);
 		req->response->header[i].value = strndup(cursor + 2, strstr(cursor + 2, "\r\n") - cursor - 2);
 	}
+	free(header);
 }
 
 static int read_body_chunked(REQUEST *req)
 {
 	char **block;
+	int *length_block;
 	char buffer[2048];
 	char *size, *temp, *pos;
 	int bytes, length, block_pos, block_count;
@@ -215,6 +378,7 @@ static int read_body_chunked(REQUEST *req)
 	block_pos = 0;
 	block_count = 1;
 	block = (char **) calloc(block_count, sizeof(char *));
+	length_block = (int *) calloc(block_count, sizeof(int));
 
 start:
 	while (!(pos = memnstr(req->response->buffer, req->response->buffer_length, "\r\n", 2)))
@@ -229,8 +393,8 @@ start:
 	}
 	size = strndup(req->response->buffer, pos - req->response->buffer);
 	length = htoi(size);
-	memmove(req->response->buffer, req->response->buffer + strlen(size) + 2, req->response->buffer_length);
 	req->response->buffer_length -= strlen(size) + 2;
+	memmove(req->response->buffer, req->response->buffer + strlen(size) + 2, req->response->buffer_length);
 	free(size);
 
 	if (!length)
@@ -243,6 +407,13 @@ start:
 		for (int i = 0; i < block_count; i++)
 			block[i] = ((char **)temp)[i];
 		free((char **)temp);
+
+		temp = (char *)length_block;
+		length_block = (int *) calloc(block_count * 2, sizeof(int));
+		for (int i = 0; i < block_count; i++)
+			length_block[i] = ((int *)temp)[i];
+		free((int *)temp);
+
 		block_count *= 2;
 	}
 
@@ -260,14 +431,16 @@ start:
 			req->response->buffer_length += bytes;
 			length -= bytes;
 		}
-		block[block_pos++] = req->response->buffer;
+		block[block_pos] = req->response->buffer;
+		length_block[block_pos++] = req->response->buffer_length;
 		req->response->buffer = strdup("");
 		req->response->buffer_length = 0;
 
 		goto start;
 	}
 	temp = req->response->buffer;
-	block[block_pos++] = memndup(req->response->buffer, length + 2);
+	block[block_pos] = memndup(req->response->buffer, length + 2);
+	length_block[block_pos++] = length + 2;
 	req->response->buffer = memndup(req->response->buffer + length + 2, req->response->buffer_length - length - 2);
 	req->response->buffer_length -= length + 2;
 	free(temp);
@@ -277,16 +450,17 @@ start:
 end:
 	length = 0;
 	for (int i = 0; i < block_pos; i++)
-		length += strlen(block[i]) - 2;
+		length += length_block[i];
 	req->response->body = calloc(length, sizeof(char));
+	req->response->length = length;
+	length = 0;
 	for (int i = 0; i < block_pos; i++)
 	{
-		strncat(req->response->body, block[i], strlen(block[i]) - 2);
+		memcpy(req->response->body + length, block[i], length_block[i] - 2);
 		free(block[i]);
 	}
-	req->response->length = length;
 	free(block);
-	free(req->response->buffer);
+	free(length_block);
 
 	return NO_ERROR;
 }
@@ -331,6 +505,17 @@ static int read_response(REQUEST *req)
 	return NO_ERROR;
 }
 
+/*
+ * oatuh function
+ */
+
+/*
+ * oatuh_create ()
+ * 
+ *   create oatuh REQUEST block
+ *
+ *    return (REQUEST *): REQUEST block pointer
+ */
 REQUEST	*oatuh_create()
 {
 	REQUEST *req;
@@ -339,12 +524,82 @@ REQUEST	*oatuh_create()
 	return req;
 }
 
+/*
+ * oatuh_destroy ()
+ * 
+ *   destroy oatuh REQUEST block
+ * 
+ *    req (REQUEST *): REQUEST block to be freed
+ */
 void	oatuh_destroy(REQUEST *req)
 {
+	if (!req)
+		return ;
+	/* connection */
+	if (req->connection.tls.subject)
+		free(req->connection.tls.subject);
+	if (req->connection.tls.issuer)
+		free(req->connection.tls.issuer);
+	/* request */
+	if (req->authority)
+		free(req->authority);
+	if (req->host)
+		free(req->host);
+	if (req->ip)
+		free(req->ip);
+	if (req->port)
+		free(req->port);
+	if (req->path)
+		free(req->path);
+	if (req->header)
+	{
+		for (int i = 0; i < oatuh_get_header_size(req->header); i++)
+		{
+			if (req->header[i].key)
+				free(req->header[i].key);
+			if (req->header[i].value)
+				free(req->header[i].value);
+		}
+		free(req->header);
+	}
+	if (req->body)
+		oatuh_destroy_body(req->body);
+	/* response */
+	if (req->response)
+	{
+		if (req->response->status_code)
+			free(req->response->status_code);
+		if (req->response->status)
+			free(req->response->status);
+		if (req->response->header)
+		{
+			for (int i = 0; i < oatuh_get_header_size(req->response->header); i++)
+			{
+				if (req->response->header[i].key)
+					free(req->response->header[i].key);
+				if (req->response->header[i].value)
+					free(req->response->header[i].value);
+			}
+			free(req->response->header);
+		}
+		if (req->response->buffer)
+			free(req->response->buffer);
+		if (req->response->body)
+			free(req->response->body);
+		free(req->response);
+	}
+	/* block */
 	free(req);
 }
 
-
+/*
+ * oatuh_get_header_size ()
+ * 
+ *   get size of headers in *header 
+ * 
+ *    header (MAP_CHILD *): headers to get size
+ *    return (int): header size
+ */
 int		oatuh_get_header_size(MAP_CHILD *header)
 {
 	int size;
@@ -354,11 +609,29 @@ int		oatuh_get_header_size(MAP_CHILD *header)
 	return size - 1;
 }
 
+/*
+ * oatuh_get_header ()
+ * 
+ *   get header value by key
+ * 
+ *    header (MAP_CHILD *): header list to search
+ *    key (char *): header key like Host, Content-Type
+ *    return (char *): header value
+ */
 char	*oatuh_get_header(MAP_CHILD *header, char *key)
 {
 	return get_header(header, key)->value;
 }
 
+/*
+ * oatuh_set_header ()
+ * 
+ *   set header key-value. if the key already exists, update the value of that key.
+ * 
+ *    header (MAP_CHILD **): pointer of headers
+ *    key (char *): key (like Host, Content-Type or custom)
+ *    value (char *): value
+ */
 void	oatuh_set_header(MAP_CHILD **header, char *key, char *value)
 {
 	MAP_CHILD *temp;
@@ -383,6 +656,7 @@ void	oatuh_set_header(MAP_CHILD **header, char *key, char *value)
 		}
 		(*header)[size].key = strdup(key);
 		(*header)[size].value = strdup(value);
+		free(temp);
 		return ;
 	}
 	*header = (MAP_CHILD *) calloc (2, sizeof(MAP_CHILD));
@@ -391,9 +665,67 @@ void	oatuh_set_header(MAP_CHILD **header, char *key, char *value)
 }
 
 /*
- * oatuh () - request REST API
+ * oatuh_create_raw_body ()
+ * 
+ *   create raw body
  *
- * REQUEST *req: request data pointer
+ *    raw (char *): raw data
+ *    return (void *): processed body pointer
+ */
+void *oatuh_create_raw_body(char *raw)
+{
+    BODY_RAW *body;
+    
+    body = (BODY_RAW *) calloc(1, sizeof(BODY_RAW));
+    if (!body)
+        return NULL;
+    body->type = RAW;
+    body->body = strdup(raw);
+    if (!body->body)
+        return NULL;
+    body->length = strlen(raw);
+    return (void *)body;
+}
+
+/*
+ * oatuh_destroy_raw_body ()
+ * 
+ *   destroy raw body
+ *
+ *    body (BODY_RAW *): raw body
+ */
+void oatuh_destroy_raw_body(BODY_RAW *body)
+{
+	if (!body)
+		return ;
+	if (body->body)
+		free(body->body);
+	free(body);
+}
+
+/*
+ * oatuh_destroy_body ()
+ * 
+ *   destroy any body
+ *
+ *    body (void *): body of any type
+ */
+void oatuh_destroy_body(void *body)
+{
+	BODY_TYPE type;
+
+	type = *(int *) body;
+	if (type == RAW)
+		oatuh_destroy_raw_body((BODY_RAW *)body);
+}
+
+/*
+ * oatuh ()
+ *
+ *   request REST API
+ *
+ *    req (REQUEST *): request Block pointer
+ *    return (int): error code on fail, NO_ERROR on success
  */
 int		oatuh(REQUEST *req)
 {
@@ -419,12 +751,14 @@ int		oatuh(REQUEST *req)
 	error_code = read_response(req);
 	if (error_code != NO_ERROR)
 		return error_code;
-	
+
     close(req->connection.socket);
 	if (req->scheme == HTTPS)
 	{
-		SSL_free(req->connection.tls.ssl);
-		SSL_CTX_free(req->connection.tls.ctx);
+		if (req->connection.tls.ssl)
+			SSL_free(req->connection.tls.ssl);
+		if (req->connection.tls.ctx)
+			SSL_CTX_free(req->connection.tls.ctx);
 	}
 	return NO_ERROR;
 }

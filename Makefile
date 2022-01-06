@@ -1,7 +1,7 @@
 GCC			= gcc
 GCCFLAGS	= #-Wall -Wextra -Werror
 
-MAIN		= oatuh.c parser.c
+MAIN		= oatuh.c
 
 SRCS		= $(addprefix srcs/, $(MAIN))
 INCS		= incs/
@@ -35,6 +35,7 @@ test	:	re
 			@echo "\033[32m"compile with main.c ..."\033[0m"
 			@gcc main.c -L./ -loatuh -lssl -lcrypto
 			@echo "==========================="
+#			@valgrind --leak-check=full ./a.out
 			@./a.out
 			@echo "\n==========================="
 			@rm a.out

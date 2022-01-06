@@ -100,4 +100,14 @@ struct request
     RESPONSE *response;
 };
 
+static TYPE method_type[7] = {
+	{"GET", GET, 0, 1},
+	{"POST", POST, 1, 1},
+	{"PUT", PUT, 1, 1},
+	{"PATCH", PATCH, 1, 1},
+	{"DELETE", DELETE, 0, 1},
+	{"HEAD", HEAD, 0, 0},
+	{"OPTIONS", OPTIONS, 0, 0},
+};
+
 #endif
