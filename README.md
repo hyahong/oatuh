@@ -2,7 +2,7 @@
 
 ## Oatuh
 
-Oauth is very ease request library for http/https.
+Oauth is very ease-to-use request library for http/https.
 
 ```c
 #include "incs/oatuh.h"
@@ -35,7 +35,10 @@ int main(void)
 
 * Support method `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, `OPTIONS`
 * Custom headers
-* Support to upload raw(text, json, html etc...), multipart(not yet supported) type
+* Support to upload body type
+    - raw (plain like text, json, html etc...)
+    - multipart (support soon)
+
 * Cookie (not yet supported)
 * Proxy (not yet supported)
 
