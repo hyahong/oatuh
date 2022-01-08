@@ -115,7 +115,6 @@ int main(void)
 
 ## Function
 
-
 ### oatuh_create ()
 
 ```c
@@ -229,3 +228,22 @@ int     oatuh(REQUEST *req)
 Parsing all data to be used except body and request.
 
 return NO_ERROR on success, error mecro like INVALID_METHOD on error.
+
+
+## Macro
+
+### Error handling
+
+```
+NO_ERROR: no error.
+
+MEMORY_ALLOCATION_FAIL: memory allocation fail.
+
+INVALID_METHOD: when a method other than `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, or `OPTIONS` is entered.
+INVALID_HOST: can't get ip address from domain.
+
+CONNECTION_FAIL: socket connection fail.
+HANDSHAKE_FAIL: ssl handshake error.
+
+SSL_CTX_CREATE_FAIL: ssl ctx allocation fail.
+```
