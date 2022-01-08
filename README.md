@@ -118,11 +118,21 @@ int main(void)
 
 ### oatuh_create ()
 
-description.
+```c
+REQUEST	*oatuh_create()
+```
+
+create an initialized oatuh REQEUST block.
+return REQUEST block pointer.
 
 ### oatuh_destroy ()
 
-description.
+```c
+void	oatuh_destroy(REQUEST *req)
+```
+
+destroy an oatuh REQEUST block.
+frees all resources used by oauth. if the body has not been freed, the body will also be freed.
 
 <br/>
 <br/>
@@ -163,4 +173,10 @@ description.
 
 ### oatuh ()
 
-description.
+```c
+int     oatuh(REQUEST *req)
+```
+
+Parsing all data to be used except body and request.
+
+return NO_ERROR on success, error mecro like INVALID_METHOD on error.
