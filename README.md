@@ -74,6 +74,36 @@ int main(void)
 
     req->method = "GET";
     req->uri = "uri";
+    
+    oatuh_set_header(&req->header, "Custom-Header-Key", "Custom-Header-Value");
+
+    oatuh(req);
+
+    oatuh_destroy(req);
+    
+    return 0;
+}
+```
+
+
+### POST
+
+```c
+#include "incs/oatuh.h"
+
+int main(void)
+{
+    REQUEST *req;
+    
+    req = oatuh_create();
+
+    req->method = "POST";
+    req->uri = "uri";
+    req->body = oatuh_create_raw_body(
+        "{\"id\": 12, \"name\": \"oatuh\"}"
+    );
+
+    oatuh_set_header(&req->header, "Content-Type", "application/json; charset=UTF-8");
 
     oatuh(req);
 
