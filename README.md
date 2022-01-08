@@ -120,7 +120,7 @@ int main(void)
 ### oatuh_create ()
 
 ```c
-REQUEST	*oatuh_create()
+REQUEST *oatuh_create ()
 ```
 
 create an initialized oatuh REQEUST block.
@@ -130,7 +130,7 @@ return REQUEST block pointer.
 ### oatuh_destroy ()
 
 ```c
-void	oatuh_destroy(REQUEST *req)
+void oatuh_destroy (REQUEST *req)
 ```
 
 destroy an oatuh REQEUST block.
@@ -142,17 +142,40 @@ frees all resources used by oauth. if the body has not been freed, the body will
 
 ### oatuh_get_header_size ()
 
-description.
+```c
+int oatuh_get_header_size (MAP_CHILD *header)
+```
+
+`MAP_CHILD *header` is the target header to get the size.
+
+return the size of header
 
 <br/>
 
 ### oatuh_get_header ()
 
-description.
+```c
+char *oatuh_get_header(MAP_CHILD *header, char *key)
+```
+
+`MAP_CHILD *header` is the target header to search the key.
+
+`char *key` is the key to search for in the header list.
+
+returns a value based on the key. Returns NULL if the key does not exist.
+
 
 ### oatuh_set_header ()
 
-description.
+```c
+void oatuh_set_header(MAP_CHILD **header, char *key, char *value)
+```
+
+`MAP_CHILD **header` is a pointer to the *header to be set.
+
+`char *key` is the key.
+
+`char *value` is the value according to key.
 
 <br/>
 <br/>
