@@ -33,6 +33,8 @@ int main(void)
 }
 ```
 
+<br/>
+
 ## Documentation
 
 * Support method `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, `OPTIONS`
@@ -112,6 +114,8 @@ int main(void)
     return 0;
 }
 ```
+
+<br/>
 
 ## Function
 
@@ -229,6 +233,7 @@ Parsing all data to be used except body and request.
 
 return NO_ERROR on success, error mecro like INVALID_METHOD on error.
 
+<br/>
 
 ## Macro
 
