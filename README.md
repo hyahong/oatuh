@@ -2,7 +2,7 @@
 
 ## Oatuh
 
-Oauth is very ease-to-use request library for http/https.
+Oatuh is very ease-to-use request library for http/https.
 
 **used OpenSSL for https. so it will work in OpenSSL available environment.**
 
@@ -133,7 +133,7 @@ void oatuh_destroy (REQUEST *req)
 
 destroy an oatuh REQEUST block.
 
-frees all resources used by oauth. if the body has not been freed, the body will also be freed.
+frees all resources used by oatuh. if the body has not been freed, the body will also be freed.
 
 <br/>
 <br/>
