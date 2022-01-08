@@ -95,14 +95,13 @@ int main(void)
 int main(void)
 {
     REQUEST *req;
+    char *body = "{\"uid\": 12, \"name\": \"oatuh\"}";
     
     req = oatuh_create();
 
     req->method = "POST";
     req->uri = "uri";
-    req->body = oatuh_create_raw_body(
-        "{\"id\": 12, \"name\": \"oatuh\"}"
-    );
+    req->body = oatuh_create_raw_body(body, strlen(body));
 
     oatuh_set_header(&req->header, "Content-Type", "application/json; charset=UTF-8");
 
@@ -182,17 +181,41 @@ void oatuh_set_header(MAP_CHILD **header, char *key, char *value)
 
 ### oatuh_create_raw_body ()
 
-description.
+```c
+void *oatuh_create_raw_body(char *raw, int length)
+```
+
+create body of raw type like text, json, html.
+
+`char *raw` is body.
+
+`int length` is length of body. 
+
+return the body pointer.
 
 ### oatuh_destroy_raw_body ()
 
-description.
+```c
+void oatuh_destroy_raw_body(BODY_RAW *body)
+```
+
+destroy the raw body. frees the body resources.
+
+even if you don't use function `oatuh_destroy_raw_body ()`, it will be deallocated in `oatuh_destroy ()`.
+
+`BODY_RAW *body` is the body pointer.
 
 <br/>
 
 ### oatuh_destroy_body ()
 
-description.
+```c
+void oatuh_destroy_body(void *body)
+```
+
+destroy any type of body.
+
+`void *body` is the body pointer.
 
 <br/>
 <br/>
