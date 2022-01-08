@@ -3,7 +3,8 @@
 ## Oatuh
 
 Oauth is very ease-to-use request library for http/https.
-** used OpenSSL for https. so it will work in OpenSSL available environment. **
+
+**used OpenSSL for https. so it will work in OpenSSL available environment.**
 
 ```c
 #include "incs/oatuh.h"
