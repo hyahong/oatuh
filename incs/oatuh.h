@@ -38,7 +38,7 @@ int		oatuh_get_header_size(MAP_CHILD *header);
 char	*oatuh_get_header(MAP_CHILD *header, char *key);
 void	oatuh_set_header(MAP_CHILD **header, char *key, char *value);
 
-void	*oatuh_create_raw_body(char *raw);
+void	*oatuh_create_raw_body(char *raw, int length);
 void    oatuh_destroy_raw_body(BODY_RAW *body);
 void    oatuh_destroy_body(void *body);
 

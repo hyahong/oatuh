@@ -672,7 +672,7 @@ void	oatuh_set_header(MAP_CHILD **header, char *key, char *value)
  *    raw (char *): raw data
  *    return (void *): processed body pointer
  */
-void *oatuh_create_raw_body(char *raw)
+void *oatuh_create_raw_body(char *raw, int length)
 {
     BODY_RAW *body;
     
@@ -680,10 +680,10 @@ void *oatuh_create_raw_body(char *raw)
     if (!body)
         return NULL;
     body->type = RAW;
-    body->body = strdup(raw);
+    body->body = memndup(raw, length);
     if (!body->body)
         return NULL;
-    body->length = strlen(raw);
+    body->length = length;
     return (void *)body;
 }
 
