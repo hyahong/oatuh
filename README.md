@@ -248,7 +248,7 @@ NO_ERROR: no error.
 
 MEMORY_ALLOCATION_FAIL: memory allocation fail.
 
-INVALID_METHOD: when a method other than `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, or `OPTIONS` is entered.
+INVALID_METHOD: method other than `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, or `OPTIONS` is entered.
 INVALID_HOST: can't get ip address from domain.
 
 CONNECTION_FAIL: socket connection fail.
