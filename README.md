@@ -116,6 +116,31 @@ int main(void)
 
 ## Function
 
-### oatuh_create ()
 
+### oatuh_create ()
 ### oatuh_destroy ()
+
+<br/>
+<br/>
+
+### oatuh_get_header_size ()
+
+<br/>
+
+### oatuh_get_header ()
+### oatuh_set_header ()
+
+<br/>
+<br/>
+
+### oatuh_create_raw_body ()
+### oatuh_destroy_raw_body ()
+
+<br/>
+
+### oatuh_destroy_body ()
+
+<br/>
+<br/>
+
+### oatuh ()
