@@ -3,6 +3,7 @@
 ## Oatuh
 
 Oauth is very ease-to-use request library for http/https.
+** used OpenSSL for https. so it will work in OpenSSL available environment. **
 
 ```c
 #include "incs/oatuh.h"
@@ -58,14 +59,26 @@ below is the presence or absence of body according to method.
 |  HEAD |X|X|
 |OPTIONS|X|X|
 
-If X, ignore even if the body can be written/read when sending/receiving.
-
-For example, if the method is GET, even if the body is allocated, it is not sent.
+If X, ignore even if the body can be written/read when sending/receiving. For example, if the method is GET, even if the body is allocated, it is not sent.
 
 ### GET
 
-
-
 ```c
-code
+#include "incs/oatuh.h"
+
+int main(void)
+{
+    REQUEST *req;
+    
+    req = oatuh_create();
+
+    req->method = "GET";
+    req->uri = "uri";
+
+    oatuh(req);
+
+    oatuh_destroy(req);
+    
+    return 0;
+}
 ```
