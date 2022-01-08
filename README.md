@@ -234,6 +234,8 @@ return NO_ERROR on success, error mecro like INVALID_METHOD on error.
 
 ### Error handling
 
+oatuh returns NO ERROR on success and the error code below on failure.
+
 ```
 NO_ERROR: no error.
 
