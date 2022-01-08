@@ -45,8 +45,6 @@ int main(void)
 
 ## Method
 
-briefly describe each method.
-
 below is the presence or absence of body according to method.
 
 |Method|Request Body|Response Body|
