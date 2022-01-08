@@ -42,3 +42,30 @@ int main(void)
 * Cookie (not yet supported)
 * Proxy (not yet supported)
 
+## Method
+
+briefly describe each method.
+
+below is the presence or absence of body according to method.
+
+|Method|Request Body|Response Body|
+|------|---|---|
+|  GET  |X|O|
+|  POST |O|O|
+|  PUT  |O|O|
+| PATCH |O|O|
+| DELETE|X|O|
+|  HEAD |X|X|
+|OPTIONS|X|X|
+
+If X, ignore even if the body can be written/read when sending/receiving.
+
+For example, if the method is GET, even if the body is allocated, it is not sent.
+
+### GET
+
+
+
+```c
+code
+```
