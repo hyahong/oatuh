@@ -61,6 +61,8 @@ below is the presence or absence of body according to method.
 
 If X, ignore even if the body can be written/read when sending/receiving. For example, if the method is GET, even if the body is allocated, it is not sent.
 
+This is an example of GET, POST method.
+
 ### GET
 
 ```c
@@ -113,34 +115,54 @@ int main(void)
 }
 ```
 
-
 ## Function
 
 
 ### oatuh_create ()
+
+description.
+
 ### oatuh_destroy ()
+
+description.
 
 <br/>
 <br/>
 
 ### oatuh_get_header_size ()
 
+description.
+
 <br/>
 
 ### oatuh_get_header ()
+
+description.
+
 ### oatuh_set_header ()
+
+description.
 
 <br/>
 <br/>
 
 ### oatuh_create_raw_body ()
+
+description.
+
 ### oatuh_destroy_raw_body ()
+
+description.
 
 <br/>
 
 ### oatuh_destroy_body ()
 
+description.
+
 <br/>
 <br/>
 
 ### oatuh ()
+
+description.
