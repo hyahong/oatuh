@@ -112,3 +112,10 @@ int main(void)
     return 0;
 }
 ```
+
+
+## Function
+
+### oatuh_create ()
+
+### oatuh_destroy ()
