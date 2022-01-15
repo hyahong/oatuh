@@ -20,8 +20,8 @@ int main(void)
 
     oatuh(req);
 
-    req->response->status_code; // 200
-    req->response->status; // OK
+    req->response->status_code; // "200"
+    req->response->status; // "OK"
     req->response->body; // html body
     req->response->length; // body length
     
